@@ -1,5 +1,5 @@
 // karyawan/dto/create-karyawan.dto.ts
-import { IsString, IsNotEmpty, IsDateString, IsEnum } from 'class-validator';
+import { IsDateString, IsEnum, IsNotEmpty, IsString } from 'class-validator';
 
 export class CreateKaryawanDto {
   @IsString()
@@ -23,7 +23,7 @@ export class CreateKaryawanDto {
   tanggal_masuk: string;
 
   // @IsNotEmpty()
-  photo: File;
+  foto: File;
 
   @IsEnum(['CONTRACT', 'PERMANENT', 'PROBATION'])
   @IsNotEmpty()

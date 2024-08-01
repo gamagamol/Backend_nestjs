@@ -14,16 +14,16 @@ datasource db {
 }
 
 model Karyawan {
-  id          Int      @id @default(autoincrement())
-  nama        String
-  nomor      String
-  jabatan    String
-  department  String
+  id             Int      @id @default(autoincrement())
+  nama           String
+  nomor          String
+  jabatan        String
+  department     String
   tanggal_masuk  DateTime
-  photo       String
-  status      Status
-  created_at    DateTime @default(now())
-  updated_at    DateTime?
+  foto           String
+  status         Status
+  created_at     DateTime @default(now())
+  updated_at     DateTime?
   
 }
 

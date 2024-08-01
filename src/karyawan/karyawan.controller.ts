@@ -61,7 +61,7 @@ export class KaryawanController {
 
   @Post()
   @UsePipes(new ValidationPipe({ transform: true }))
-  @UseInterceptors(FileInterceptor('photo', { storage, fileFilter, limits }))
+  @UseInterceptors(FileInterceptor('foto', { storage, fileFilter, limits }))
   async createEmployee(
     @Body() data: CreateKaryawanDto,
     @UploadedFile() file: Express.Multer.File,
@@ -72,7 +72,7 @@ export class KaryawanController {
       jabatan: data.jabatan,
       department: data.department,
       tanggal_masuk: new Date(data.tanggal_masuk),
-      photo: file.filename,
+      foto: file.filename,
       status: data.status,
       created_at: new Date(),
     };
@@ -99,7 +99,7 @@ export class KaryawanController {
 
   @Patch(':id')
   @UsePipes(new ValidationPipe({ transform: true }))
-  @UseInterceptors(FileInterceptor('photo', { storage, fileFilter, limits }))
+  @UseInterceptors(FileInterceptor('foto', { storage, fileFilter, limits }))
   async updateKaryawan(
     @Param('id') id: string,
     @Body() data: CreateKaryawanDto,
@@ -111,7 +111,7 @@ export class KaryawanController {
       jabatan: data.jabatan,
       department: data.department,
       tanggal_masuk: new Date(data.tanggal_masuk),
-      photo: file.filename,
+      foto: file.filename,
       status: data.status,
       updated_at: new Date(),
     };
@@ -144,6 +144,74 @@ export class KaryawanController {
     } catch (error) {
       res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
         message: 'Failed exporting to Excel',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
+    }
+  }
+
+  @Post('import')
+  @UseInterceptors(FileInterceptor('file', { storage }))
+  async importFromExcel(
+    @UploadedFile() file: Express.Multer.File,
+    @Res() res: Response,
+  ): Promise<void> {
+    if (!file) {
+      throw new HttpException('File not provided', HttpStatus.BAD_REQUEST);
+    }
+
+    let status_type = {
+      'kontrak': 'CONTRACT',
+      'tetap': 'PERMANENT',
+      'probation': 'PROBATION',
+    };
+
+    
+    
+
+    try {
+      const filePath = './uploads/' + file.filename;
+      const workbook = XLSX.readFile(filePath);
+      const sheetName = workbook.SheetNames[0];
+      const worksheet = workbook.Sheets[sheetName];
+      const jsonData: CreateKaryawanDto[] = XLSX.utils.sheet_to_json(
+        worksheet,
+        {
+          header: 1,
+        },
+      );
+
+      const headers = jsonData[0];
+      const rows = jsonData.slice(1);
+
+      rows.forEach((row) => {
+        let nama: string = row[0];
+        let nomor: string = '' + row[1];
+        let jabatan: string = row[2];
+        let departemen: string = row[3];
+        let tanggal_masuk: string = row[4];
+        let foto: string = row[5];
+        let status = status_type[row[6]];
+
+        const newKaryawan: Prisma.KaryawanCreateInput = {
+          nama: nama,
+          nomor: nomor,
+          jabatan: jabatan,
+          department: departemen,
+          tanggal_masuk: new Date(tanggal_masuk),
+          foto: foto,
+          status: status,
+          created_at: new Date(),
+        };
+
+        this.karyawanService.createKaryawan(newKaryawan);
+      });
+      res.status(HttpStatus.OK).json({
+        message: 'Success importing from Excel',
+        status: HttpStatus.OK,
+      });
+    } catch (error) {
+      res.status(HttpStatus.BAD_REQUEST).json({
+        message: 'FAILED importing from Excel',
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
