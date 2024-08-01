@@ -5,6 +5,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { KaryawanModule } from './karyawan/karyawan.module';
 import { PrismaModule } from './prisma.module';
+
 @Module({
   imports: [
     ServeStaticModule.forRoot({

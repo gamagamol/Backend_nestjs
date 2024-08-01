@@ -8,6 +8,7 @@ import {
   Param,
   Patch,
   Post,
+  Res,
   UploadedFile,
   UseInterceptors,
   UsePipes,
@@ -15,8 +16,10 @@ import {
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Karyawan, Prisma } from '@prisma/client';
+import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
+import * as XLSX from 'xlsx';
 import { CreateKaryawanDto } from './karyawan.dto';
 import { KaryawanService } from './karyawan.service';
 
@@ -33,20 +36,24 @@ export const storage = diskStorage({
   },
 });
 
-
 const fileFilter = (req, file, cb) => {
   const allowedTypes = ['image/png', 'image/jpeg', 'image/jpg'];
   if (allowedTypes.includes(file.mimetype)) {
     cb(null, true);
   } else {
-    cb(new HttpException('Silahkan Masukan Tipe File JPG,PNG atau JPEG', HttpStatus.BAD_REQUEST), false);
+    cb(
+      new HttpException(
+        'Silahkan Masukan Tipe File JPG,PNG atau JPEG',
+        HttpStatus.BAD_REQUEST,
+      ),
+      false,
+    );
   }
 };
 
 const limits = {
   fileSize: 1 * 1024 * 1024, // 1 MB
 };
-
 
 @Controller('karyawan')
 export class KaryawanController {
@@ -92,9 +99,7 @@ export class KaryawanController {
 
   @Patch(':id')
   @UsePipes(new ValidationPipe({ transform: true }))
-  @UseInterceptors(
-    FileInterceptor('photo', { storage, fileFilter, limits }),
-  )
+  @UseInterceptors(FileInterceptor('photo', { storage, fileFilter, limits }))
   async updateKaryawan(
     @Param('id') id: string,
     @Body() data: CreateKaryawanDto,
@@ -117,5 +122,30 @@ export class KaryawanController {
   @Delete(':id')
   async deleteKaryawan(@Param('id') id: string): Promise<Karyawan> {
     return this.karyawanService.deleteKaryawan(Number(id));
+  }
+
+  @Get('export')
+  async exportToExcel(@Res() res: Response): Promise<void> {
+    try {
+      const data = await this.karyawanService.getKaryawan();
+      const ws = XLSX.utils.json_to_sheet(data);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+
+      // Tentukan path untuk menyimpan file
+      const filePath = './uploads/exported-karyawan.xlsx';
+
+      XLSX.writeFile(wb, filePath);
+
+      res.status(HttpStatus.OK).json({
+        message: 'Success exporting to Excel',
+        status: HttpStatus.OK,
+      });
+    } catch (error) {
+      res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
+        message: 'Failed exporting to Excel',
+        status: HttpStatus.INTERNAL_SERVER_ERROR,
+      });
+    }
   }
 }
