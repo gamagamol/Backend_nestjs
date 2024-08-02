@@ -29,3 +29,18 @@ export class CreateKaryawanDto {
   @IsNotEmpty()
   status: 'CONTRACT' | 'PERMANENT' | 'PROBATION';
 }
+
+export class DashboardDTO {
+  AgregatStatus;
+  AgregatDepartment;
+}
+
+export class AgregatStatus {
+  jumlah: number;
+  status: string;
+}
+
+export class AgregatDepartment {
+  jumlah: number;
+  department: string;
+}

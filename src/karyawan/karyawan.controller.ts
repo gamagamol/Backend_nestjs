@@ -20,7 +20,7 @@ import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as XLSX from 'xlsx';
-import { CreateKaryawanDto } from './karyawan.dto';
+import { CreateKaryawanDto, DashboardDTO } from './karyawan.dto';
 import { KaryawanService } from './karyawan.service';
 
 export const storage = diskStorage({
@@ -160,13 +160,10 @@ export class KaryawanController {
     }
 
     let status_type = {
-      'kontrak': 'CONTRACT',
-      'tetap': 'PERMANENT',
-      'probation': 'PROBATION',
+      kontrak: 'CONTRACT',
+      tetap: 'PERMANENT',
+      probation: 'PROBATION',
     };
-
-    
-    
 
     try {
       const filePath = './uploads/' + file.filename;
@@ -215,5 +212,15 @@ export class KaryawanController {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
+  }
+
+  @Get('dashboard')
+  async Dashboard(): Promise<DashboardDTO> {
+    const responseDashboard: DashboardDTO = {
+      AgregatDepartment: await this.karyawanService.agregatDepartemen(),
+      AgregatStatus: await this.karyawanService.agregatStatus(),
+    };
+
+    return responseDashboard;
   }
 }
