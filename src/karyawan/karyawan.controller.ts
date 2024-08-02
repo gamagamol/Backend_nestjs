@@ -20,7 +20,11 @@ import { Response } from 'express';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 import * as XLSX from 'xlsx';
-import { CreateKaryawanDto, DashboardDTO } from './karyawan.dto';
+import {
+  CreateKaryawanDto,
+  DashboardDTO,
+  UpdateKaryawanDto,
+} from './karyawan.dto';
 import { KaryawanService } from './karyawan.service';
 
 export const storage = diskStorage({
@@ -97,12 +101,27 @@ export class KaryawanController {
     return this.karyawanService.getKaryawan();
   }
 
+  @Get('/dashboard')
+  async Dashboard(): Promise<DashboardDTO> {
+    const responseDashboard: DashboardDTO = {
+      AgregatDepartment: await this.karyawanService.agregatDepartemen(),
+      AgregatStatus: await this.karyawanService.agregatStatus(),
+    };
+
+    return responseDashboard;
+  }
+
+  @Get('/:id')
+  async getEmployeeById(@Param('id') id): Promise<Karyawan> {
+    return this.karyawanService.getKaryawanById(parseInt(id));
+  }
+
   @Patch(':id')
   @UsePipes(new ValidationPipe({ transform: true }))
   @UseInterceptors(FileInterceptor('foto', { storage, fileFilter, limits }))
   async updateKaryawan(
     @Param('id') id: string,
-    @Body() data: CreateKaryawanDto,
+    @Body() data: UpdateKaryawanDto,
     @UploadedFile() file: Express.Multer.File,
   ): Promise<Karyawan> {
     const updateData: Prisma.KaryawanUpdateInput = {
@@ -110,12 +129,13 @@ export class KaryawanController {
       nomor: data.nomor,
       jabatan: data.jabatan,
       department: data.department,
-      tanggal_masuk: new Date(data.tanggal_masuk),
-      foto: file.filename,
       status: data.status,
       updated_at: new Date(),
     };
 
+    if (file) {
+      updateData.foto = file.filename;
+    }
     return this.karyawanService.updateKaryawan(Number(id), updateData);
   }
 
@@ -132,7 +152,6 @@ export class KaryawanController {
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
 
-      // Tentukan path untuk menyimpan file
       const filePath = './uploads/exported-karyawan.xlsx';
 
       XLSX.writeFile(wb, filePath);
@@ -147,6 +166,21 @@ export class KaryawanController {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
+  }
+
+  getJsDateFromExcel(excelDate) {
+    const SECONDS_IN_DAY = 24 * 60 * 60;
+    const MISSING_LEAP_YEAR_DAY = SECONDS_IN_DAY * 1000;
+    const MAGIC_NUMBER_OF_DAYS = 25567 + 2;
+    if (!Number(excelDate)) {
+      alert('wrong input format');
+    }
+
+    const delta = excelDate - MAGIC_NUMBER_OF_DAYS;
+    const parsed = delta * MISSING_LEAP_YEAR_DAY;
+    const date = new Date(parsed);
+
+    return date;
   }
 
   @Post('import')
@@ -185,7 +219,7 @@ export class KaryawanController {
         let nomor: string = '' + row[1];
         let jabatan: string = row[2];
         let departemen: string = row[3];
-        let tanggal_masuk: string = row[4];
+        let tanggal_masuk: Date = this.getJsDateFromExcel(row[4]);
         let foto: string = row[5];
         let status = status_type[row[6]];
 
@@ -194,7 +228,7 @@ export class KaryawanController {
           nomor: nomor,
           jabatan: jabatan,
           department: departemen,
-          tanggal_masuk: new Date(tanggal_masuk),
+          tanggal_masuk: tanggal_masuk,
           foto: foto,
           status: status,
           created_at: new Date(),
@@ -212,15 +246,5 @@ export class KaryawanController {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
-  }
-
-  @Get('dashboard')
-  async Dashboard(): Promise<DashboardDTO> {
-    const responseDashboard: DashboardDTO = {
-      AgregatDepartment: await this.karyawanService.agregatDepartemen(),
-      AgregatStatus: await this.karyawanService.agregatStatus(),
-    };
-
-    return responseDashboard;
   }
 }
