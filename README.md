@@ -3,7 +3,8 @@
 
 
 ## Running Generate DB
-```npx prisma generate
+```bash
+$ npx prisma generate
 ```
 ## Installation
 
@@ -22,6 +23,9 @@ $ npm run start:dev
 
 # production mode
 $ npm run start:prod
+
+#access app
+http://localhost:3000
 ```
 
 
