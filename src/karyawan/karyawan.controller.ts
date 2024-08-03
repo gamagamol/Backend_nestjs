@@ -111,11 +111,6 @@ export class KaryawanController {
     return responseDashboard;
   }
 
-  @Get('/:id')
-  async getEmployeeById(@Param('id') id): Promise<Karyawan> {
-    return this.karyawanService.getKaryawanById(parseInt(id));
-  }
-
   @Patch(':id')
   @UsePipes(new ValidationPipe({ transform: true }))
   @UseInterceptors(FileInterceptor('foto', { storage, fileFilter, limits }))
@@ -246,5 +241,10 @@ export class KaryawanController {
         status: HttpStatus.INTERNAL_SERVER_ERROR,
       });
     }
+  }
+
+  @Get(':id')
+  async getEmployeeById(@Param('id') id): Promise<Karyawan> {
+    return this.karyawanService.getKaryawanById(parseInt(id));
   }
 }
